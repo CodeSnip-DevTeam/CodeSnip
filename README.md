@@ -168,7 +168,7 @@ CodeSnip is distributed under the [MIT License](LICENSE).
 
 ## Developer Team
 
-[https://github.com/CodeSnip-DevTeam](CodeSnip Development Team)
+[CodeSnip Development Team](https://github.com/CodeSnip-DevTeam)
 
 ---
 
