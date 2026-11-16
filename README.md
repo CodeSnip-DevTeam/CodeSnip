@@ -1,7 +1,7 @@
 # CodeSnip | Next-Generation Code & Prompt Manager
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-26Q3.5%20Development-00ADB5?style=for-the-badge" alt="Version 26Q3.5 Development">
+  <img src="https://img.shields.io/badge/Version-26Q3.5%20-00ADB5?style=for-the-badge" alt="Version 26Q3.5">
   <img src="https://img.shields.io/badge/Built%20with-Electron-47848F?style=for-the-badge" alt="Built with Electron">
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT License">
 </p>
@@ -119,13 +119,17 @@ npm run dist
   - [x] **26Q2.5** — JSON export/import, Spotlight improvements, and version naming update
 - [x] **26Q3** — Linux support, appearance improvements, customization, and category management
   - [x] **26Q3.1** — Critical hotfixes
-- [ ] **26Q3.5** — Important bug fixes, Spanish language support, light theme improvements, and visual refresh
-- [ ] **26Q4** — Application optimization and expanded macOS/Linux support, including Slackware and Gentoo
-- [ ] **27Q1** — Plugin system and code preview
+  - [x] **26Q3.5** — Important bug fixes, Spanish language support, light theme improvements, and visual refresh
+  - [ ] **26Q3.6** — Maintenance updates, bug fixes and stability improvements
+- [ ] **26Q4** — Application optimization, resource management improvements, and expanded macOS/Linux support, including Slackware and Gentoo
+- [ ] **27Q1** — Plugin system, code preview, major performance improvements and a **BIG** surprise
+- [ ] **27Q2** — Developer ecosystem expansion, Plugin Marketplace, manual plugin installation, Developer API, and advanced snippet organization
+- [ ] **27Q3** — Optional cloud synchronization, cross-device data management, local-first storage, automated backups, and synchronization conflict resolution
+- [ ] **27Q4** — AI integration, local AI model support, external AI API integrations, intelligent code categorization, and advanced prompt management
 
 > [!NOTE]
-> The roadmap represents current development plans and may change as priorities evolve. Features are not considered released until the corresponding release is published.
-
+> The roadmap represents current development plans and may change as priorities evolve. Features are not considered released until the corresponding release is published. Cloud synchronization and AI integrations are intended to remain optional.
+> 
 ## Contributing
 
 Contributions, bug reports, and suggestions are welcome.
@@ -145,16 +149,6 @@ Contributions, bug reports, and suggestions are welcome.
    git checkout -b feature/your-feature
    ```
 
-- [x] v1.0 — Initial Release
-- [x] v1.1 — Hotfixes and Favorites Feature
-- [x] 26Q2 (v2.0) — Spotlight, Sharing, and Redesigned Liquid Glass UI
-  - [x] 26Q2.5 — JSON Export/Import, Improved Spotlight, and Version Naming Update
-- [x] 26Q3 — Linux Support (Debian, Arch, Red Hat), Improved Appearance, Customization, and Category Management
-  - [x] 26Q3.1 — Critical Hotfixes
-  - [ ] 26Q3.5 — Important bug fixes, Spanish language support, light theme improvements, and visual refresh
- - [ ] 26Q4 — Application Optimization, Full macOS and Linux Support (Slackware and Gentoo)
- - [ ] 27Q1 — Plugin System and Code Preview
-
    ```bash
    git add .
    git commit -m "Describe your changes"
@@ -172,9 +166,9 @@ Contributions, bug reports, and suggestions are welcome.
 
 CodeSnip is distributed under the [MIT License](LICENSE).
 
-## Developer
+## Developer Team
 
-**Mustafa Selim AYDENİZ**
+[https://github.com/CodeSnip-DevTeam](CodeSnip Development Team)
 
 ---
 
