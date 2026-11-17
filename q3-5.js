@@ -79,7 +79,7 @@
   }
 
   function safeRenderSnips() {
-    const all = JSON.parse(localStorage.getItem("all_snippets_data") || "[]");
+    const all = window.readJsonStorage("all_snippets_data", []);
     const container = document.getElementById("snip-list-container");
     if (!container) return;
     const current = lang();
@@ -90,6 +90,7 @@
     container.replaceChildren();
     const fragment = document.createDocumentFragment();
     all.forEach(snip => {
+      if (!snip || typeof snip.id !== "string" || typeof snip.title !== "string" || typeof snip.category !== "string" || typeof snip.code !== "string") return;
       if (currentCategory === "favorites" && !snip.isFavorite) return;
       if (currentCategory !== "all" && currentCategory !== "favorites" && snip.category !== currentCategory) return;
       const title = String(snip.title || ""), source = String(snip.code || "");
@@ -129,10 +130,13 @@
     });
   }
   function refreshCategories() {
-    const categories = JSON.parse(localStorage.getItem("codesnip_categories") || "[]");
+    const categories = window.readJsonStorage("codesnip_categories", []);
     const current = lang();
     categories.forEach(category => {
-      if (!category.name) category.name = {tr:category.id,en:category.id};
+      if (!category || typeof category.id !== "string" || !category.id) return;
+      if (!category.name || typeof category.name !== "object" || Array.isArray(category.name)) {
+        category.name = {tr:category.id,en:category.id};
+      }
       if (!category.name.es) category.name.es = category.name.en || category.name.tr || category.id;
     });
     localStorage.setItem("codesnip_categories", JSON.stringify(categories));
