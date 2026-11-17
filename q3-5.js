@@ -134,7 +134,9 @@
     const current = lang();
     categories.forEach(category => {
       if (!category || typeof category.id !== "string" || !category.id) return;
-      if (!category.name) category.name = {tr:category.id,en:category.id};
+      if (!category.name || typeof category.name !== "object" || Array.isArray(category.name)) {
+        category.name = {tr:category.id,en:category.id};
+      }
       if (!category.name.es) category.name.es = category.name.en || category.name.tr || category.id;
     });
     localStorage.setItem("codesnip_categories", JSON.stringify(categories));
