@@ -1,12 +1,24 @@
 function readJsonStorage(key, fallback) {
     try {
         const rawValue = localStorage.getItem(key);
-        return rawValue === null ? fallback : JSON.parse(rawValue);
+        if (rawValue === null) return fallback;
+
+        const parsedValue = JSON.parse(rawValue);
+        if (parsedValue === null) return fallback;
+
+        if (Array.isArray(fallback)) {
+            if (!Array.isArray(parsedValue)) return fallback;
+            return parsedValue.filter(item => item && typeof item === 'object' && !Array.isArray(item));
+        }
+
+        return parsedValue;
     } catch (error) {
         console.warn(`CodeSnip could not read "${key}" from local storage:`, error);
         return fallback;
     }
 }
+
+window.readJsonStorage = readJsonStorage;
 
 let currentCategory = 'all';
 let currentLang = 'tr';
@@ -151,40 +163,55 @@ function renderSnips() {
     const allSnips = readJsonStorage('all_snippets_data', []);
     const container = document.getElementById('snip-list-container');
     if (!container) return;
-    container.innerHTML = '';
+    container.replaceChildren();
 
     const settingGlass = document.getElementById('setting-glass');
     const settingFontSize = document.getElementById('setting-font-size');
     const settingWrap = document.getElementById('setting-wrap');
-
     const glassEnabled = settingGlass ? settingGlass.checked : true;
     const fontSize = settingFontSize ? settingFontSize.value : '14px';
     const wrapEnabled = settingWrap ? settingWrap.checked : false;
-    const glassClass = glassEnabled ? 'liquid_glass' : 'no-glass';
-
     const fragment = document.createDocumentFragment();
 
     allSnips.forEach(snip => {
+        if (typeof snip.id !== 'string' || typeof snip.title !== 'string' ||
+            typeof snip.category !== 'string' || typeof snip.code !== 'string') return;
         if (currentCategory === 'favorites' && !snip.isFavorite) return;
         if (currentCategory !== 'all' && currentCategory !== 'favorites' && snip.category !== currentCategory) return;
 
-        const card = document.createElement('div');
-        card.className = `snip-card ${glassClass} fade-in`;
-        card.setAttribute('data-category', snip.category);
+        const card = document.createElement('article');
+        card.className = `snip-card ${glassEnabled ? 'liquid_glass' : 'no-glass'} fade-in`;
+        card.dataset.category = snip.category;
 
-        const safeCode = snip.code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        const copyBtnText = t('Kopyala', 'Copy');
-        const deleteBtnText = t('Sil', 'Delete');
-        const editBtnText = t('Düzenle', 'Edit');
-        const shareBtnText = t('Paylaş', 'Share');
+        const header = document.createElement('div');
+        header.className = 'snip-header';
+        const heading = document.createElement('h3');
+        heading.textContent = snip.title;
+        const actions = document.createElement('div');
+        actions.className = 'card-actions';
 
-        const favIcon = snip.isFavorite ? '★' : '☆';
-        const favClass = snip.isFavorite ? 'fav-active' : '';
+        const addButton = (className, label, action, title = label) => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = className;
+            button.textContent = label;
+            button.title = title;
+            button.addEventListener('click', action);
+            actions.appendChild(button);
+        };
 
-        const lineCount = snip.code.split('\n').length;
-        const charCount = snip.code.length;
-        const linesTxt = currentLang === 'tr' ? 'satır' : currentLang === 'es' ? 'líneas' : 'lines';
-        const charsTxt = currentLang === 'tr' ? 'karakter' : currentLang === 'es' ? 'caracteres' : 'characters';
+        addButton(`fav-btn ${snip.isFavorite ? 'fav-active' : ''}`, snip.isFavorite ? '★' : '☆',
+            () => window.toggleFavorite(snip.id), 'Favori');
+        addButton('share-btn', t('Paylaş', 'Share'),
+            () => window.kartiKopruyeDonustur(snip.id));
+        addButton('edit-btn', t('Düzenle', 'Edit'),
+            () => window.editCard(snip.id));
+        addButton('copy-btn', t('Kopyala', 'Copy'),
+            event => window.copyCode(snip.id, event));
+        addButton('delete-btn', t('Sil', 'Delete'),
+            () => window.deleteSnip(snip.id));
+
+        header.append(heading, actions);
 
         let langClass = 'language-none';
         if (snip.category === 'web') {
@@ -195,22 +222,26 @@ function renderSnips() {
             langClass = 'language-javascript';
         }
 
-        card.innerHTML = `
-            <div class="snip-header">
-                <h3>${snip.title}</h3>
-                <div class="card-actions">
-                    <button class="fav-btn ${favClass}" onclick="toggleFavorite('${snip.id}')" title="Favori">${favIcon}</button>
-                    <button class="share-btn" onclick="kartiKopruyeDonustur('${snip.id}')" title="${shareBtnText}"><i class="fas fa-share-alt"></i> ${shareBtnText}</button>
-                    <button class="edit-btn" onclick="editCard('${snip.id}')">${editBtnText}</button>
-                    <button class="copy-btn" onclick="copyCode('${snip.id}', event)">${copyBtnText}</button>
-                    <button class="delete-btn" onclick="deleteSnip('${snip.id}')">${deleteBtnText}</button>
-                </div>
-            </div>
-            <pre style="white-space: ${wrapEnabled ? 'pre-wrap' : 'pre'}" class="${langClass}"><code id="${snip.id}" style="font-size: ${fontSize}" class="${langClass}">${safeCode}</code></pre>
-            <div class="code-stats" style="text-align: right; font-size: 11px; color: #888; margin-top: 5px; font-family: monospace;">
-                <span>${lineCount} ${linesTxt}</span> • <span>${charCount} ${charsTxt}</span>
-            </div>
-        `;
+        const pre = document.createElement('pre');
+        pre.style.whiteSpace = wrapEnabled ? 'pre-wrap' : 'pre';
+        pre.className = langClass;
+        const code = document.createElement('code');
+        code.id = snip.id;
+        code.style.fontSize = fontSize;
+        code.className = langClass;
+        code.textContent = snip.code;
+        pre.appendChild(code);
+
+        const stats = document.createElement('div');
+        stats.className = 'code-stats';
+        stats.style.cssText = 'text-align:right;font-size:11px;color:#888;margin-top:5px;font-family:monospace;';
+        const lineCount = snip.code.split('\n').length;
+        const charCount = snip.code.length;
+        const linesTxt = currentLang === 'tr' ? 'satır' : currentLang === 'es' ? 'líneas' : 'lines';
+        const charsTxt = currentLang === 'tr' ? 'karakter' : currentLang === 'es' ? 'caracteres' : 'characters';
+        stats.textContent = `${lineCount} ${linesTxt} • ${charCount} ${charsTxt}`;
+
+        card.append(header, pre, stats);
         fragment.appendChild(card);
     });
 
@@ -218,56 +249,59 @@ function renderSnips() {
     updateBadges(allSnips);
 
     if (typeof Prism !== 'undefined') {
-        Prism.highlightAll();
+        Prism.highlightAllUnder(container);
     }
 }
-
 function renderCategories() {
     const categories = readJsonStorage('codesnip_categories', []);
     const container = document.getElementById('dynamic-categories');
     const selectCategory = document.getElementById('new-category');
-
     if (!container || !selectCategory) return;
 
-    container.innerHTML = '';
-    selectCategory.innerHTML = '';
-
+    container.replaceChildren();
+    selectCategory.replaceChildren();
     const fragment = document.createDocumentFragment();
 
     categories.forEach(cat => {
-        const catName = cat.name[currentLang] || cat.name.tr;
-
+        if (typeof cat.id !== 'string' || !cat.id || typeof cat.name !== 'object' || !cat.name) return;
+        const catName = String(cat.name[currentLang] || cat.name.tr || cat.id);
         const btn = document.createElement('button');
+        btn.type = 'button';
         btn.className = `nav-item ${currentCategory === cat.id ? 'active' : ''}`;
         btn.id = `nav-${cat.id}`;
-        btn.onclick = function () { filterCategory(cat.id, this); };
+        btn.addEventListener('click', function () { filterCategory(cat.id, this); });
 
-        btn.innerHTML = `
-            <span><i class="bi ${cat.icon}"></i> <span>${catName}</span></span>
-            <span class="badge" id="badge-${cat.id}">0</span>
-        `;
+        const labelGroup = document.createElement('span');
+        const icon = document.createElement('i');
+        icon.className = `bi ${typeof cat.icon === 'string' ? cat.icon : 'bi-folder'}`;
+        const label = document.createElement('span');
+        label.textContent = catName;
+        labelGroup.append(icon, document.createTextNode(' '), label);
+
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.id = `badge-${cat.id}`;
+        badge.textContent = '0';
+        btn.append(labelGroup, badge);
 
         const deleteBtn = document.createElement('i');
         deleteBtn.className = 'bi bi-trash';
         deleteBtn.style.marginLeft = 'auto';
         deleteBtn.style.cursor = 'pointer';
         deleteBtn.style.paddingLeft = '10px';
-        deleteBtn.onclick = function (e) { deleteCategory(e, cat.id); };
-
+        deleteBtn.addEventListener('click', event => deleteCategory(event, cat.id));
         btn.appendChild(deleteBtn);
         fragment.appendChild(btn);
 
         const option = document.createElement('option');
         option.value = cat.id;
-        option.innerText = catName;
+        option.textContent = catName;
         selectCategory.appendChild(option);
     });
 
     container.appendChild(fragment);
-    const allSnips = readJsonStorage('all_snippets_data', []);
-    updateBadges(allSnips);
+    updateBadges(readJsonStorage('all_snippets_data', []));
 }
-
 function kartiKopruyeDonustur(id) {
     const allSnips = readJsonStorage('all_snippets_data', []);
     const snip = allSnips.find(s => s.id === id);
@@ -663,19 +697,32 @@ if (spInputEl) {
             resultsDiv.classList.remove('spotlight-results-hidden');
             seciliIndeks = 0;
 
-            let listeHtml = '<div class="spotlight-list">';
+            const list = document.createElement('div');
+            list.className = 'spotlight-list';
             filtrelenmisKartlar.forEach((item, index) => {
-                const activeClass = index === 0 ? 'active' : '';
-                listeHtml += `
-                    <div class="spotlight-item ${activeClass}" data-index="${index}">
-                        <span>${item.title}</span>
-                        <span class="item-category">${item.category.toUpperCase()}</span>
-                    </div>
-                `;
-            });
-            listeHtml += '</div><div id="spotlight-ql" class="spotlight-quick-preview"><pre><code id="spotlight-ql-code"></code></pre></div>';
+                const resultItem = document.createElement('div');
+                resultItem.className = `spotlight-item ${index === 0 ? 'active' : ''}`;
+                resultItem.dataset.index = String(index);
 
-            resultsDiv.innerHTML = listeHtml;
+                const title = document.createElement('span');
+                title.textContent = item.title;
+                const category = document.createElement('span');
+                category.className = 'item-category';
+                category.textContent = item.category.toUpperCase();
+
+                resultItem.append(title, category);
+                list.appendChild(resultItem);
+            });
+
+            const preview = document.createElement('div');
+            preview.id = 'spotlight-ql';
+            preview.className = 'spotlight-quick-preview';
+            const previewCode = document.createElement('code');
+            previewCode.id = 'spotlight-ql-code';
+            const previewPre = document.createElement('pre');
+            previewPre.appendChild(previewCode);
+            preview.appendChild(previewPre);
+            resultsDiv.replaceChildren(list, preview);
         } else {
             resultsDiv.innerHTML = `<div class="spotlight-hint">${currentLang === 'tr' ? 'Eşleşen kod bulunamadı.' : 'No matching code found.'}</div>`;
         }
