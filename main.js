@@ -4,6 +4,20 @@ const fs = require('fs');
 
 let mainWindow;
 
+const MAX_BACKUP_SIZE_BYTES = 20 * 1024 * 1024;
+const MAX_BACKUP_SNIPPETS = 10000;
+
+function isValidSnippetBackup(data) {
+    return Array.isArray(data) && data.length <= MAX_BACKUP_SNIPPETS && data.every(snippet =>
+        snippet && typeof snippet === 'object' && !Array.isArray(snippet) &&
+        typeof snippet.id === 'string' && snippet.id.trim().length > 0 &&
+        typeof snippet.title === 'string' &&
+        typeof snippet.category === 'string' &&
+        typeof snippet.code === 'string' &&
+        (snippet.isFavorite === undefined || typeof snippet.isFavorite === 'boolean')
+    );
+}
+
 function createWindow() {
     const isMac = process.platform === 'darwin';
 
@@ -89,12 +103,19 @@ ipcMain.handle('import-data', async () => {
         }
 
         const filePath = filePaths[0];
+        const fileStats = fs.statSync(filePath);
+        if (fileStats.size > MAX_BACKUP_SIZE_BYTES) {
+            return { success: false, message: 'Yedek dosyası 20 MB sınırını aşıyor.' };
+        }
+
         const rawData = fs.readFileSync(filePath, 'utf-8');
+        const parsedData = JSON.parse(rawData);
 
-        // Yüklenen dosyanın geçerli bir JSON olup olmadığını doğrula
-        JSON.parse(rawData);
+        if (!isValidSnippetBackup(parsedData)) {
+            return { success: false, message: 'Yedek dosyasının yapısı geçersiz. CodeSnip kod kartı yedeği seçin.' };
+        }
 
-        return { success: true, data: rawData };
+        return { success: true, data: JSON.stringify(parsedData) };
     } catch (error) {
         return { success: false, message: 'Seçilen dosya geçerli bir JSON yedeği değil veya okunamadı!' };
     }
