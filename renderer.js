@@ -819,6 +819,12 @@ window.addEventListener('keydown', (e) => {
                 const cozulmusMetin = decodeURIComponent(atob(sifreliKisim).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
 
                 const gelenKart = JSON.parse(cozulmusMetin);
+                if (!gelenKart || typeof gelenKart !== 'object' ||
+                    typeof gelenKart.title !== 'string' || !gelenKart.title.trim() ||
+                    typeof gelenKart.code !== 'string' ||
+                    typeof gelenKart.category !== 'string' || !gelenKart.category.trim()) {
+                    throw new Error('Invalid shared snippet structure');
+                }
                 hariciKartEkle(`${gelenKart.title} (Gelen)`, gelenKart.code, gelenKart.category);
 
                 spotlightInput.value = '';
@@ -891,7 +897,24 @@ window.importCodeSnipData = async function () {
     try {
         const result = await window.codeSnipAPI.importData();
         if (result && result.success) {
-            localStorage.setItem('all_snippets_data', result.data);
+            const importedSnippets = JSON.parse(result.data);
+            const validBackup = Array.isArray(importedSnippets) &&
+                importedSnippets.length <= 10000 &&
+                importedSnippets.every(snippet =>
+                    snippet && typeof snippet === 'object' && !Array.isArray(snippet) &&
+                    typeof snippet.id === 'string' && snippet.id.trim().length > 0 &&
+                    typeof snippet.title === 'string' &&
+                    typeof snippet.category === 'string' &&
+                    typeof snippet.code === 'string' &&
+                    (snippet.isFavorite === undefined || typeof snippet.isFavorite === 'boolean')
+                );
+
+            if (!validBackup) {
+                alert(currentLang === 'tr' ? 'Yedek dosyasının içeriği geçersiz.' : 'The backup file contents are invalid.');
+                return;
+            }
+
+            localStorage.setItem('all_snippets_data', JSON.stringify(importedSnippets));
             alert(currentLang === 'tr' ? 'Verileriniz başarıyla geri yüklendi! Uygulama yenilenecektir.' : 'Data successfully restored! App will reload.');
             window.location.reload();
         } else if (result && result.message) {
