@@ -1,3 +1,13 @@
+function readJsonStorage(key, fallback) {
+    try {
+        const rawValue = localStorage.getItem(key);
+        return rawValue === null ? fallback : JSON.parse(rawValue);
+    } catch (error) {
+        console.warn(`CodeSnip could not read "${key}" from local storage:`, error);
+        return fallback;
+    }
+}
+
 let currentCategory = 'all';
 let currentLang = 'tr';
 
@@ -138,7 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function renderSnips() {
-    const allSnips = JSON.parse(localStorage.getItem('all_snippets_data')) || [];
+    const allSnips = readJsonStorage('all_snippets_data', []);
     const container = document.getElementById('snip-list-container');
     if (!container) return;
     container.innerHTML = '';
@@ -213,7 +223,7 @@ function renderSnips() {
 }
 
 function renderCategories() {
-    const categories = JSON.parse(localStorage.getItem('codesnip_categories')) || [];
+    const categories = readJsonStorage('codesnip_categories', []);
     const container = document.getElementById('dynamic-categories');
     const selectCategory = document.getElementById('new-category');
 
@@ -254,12 +264,12 @@ function renderCategories() {
     });
 
     container.appendChild(fragment);
-    const allSnips = JSON.parse(localStorage.getItem('all_snippets_data')) || [];
+    const allSnips = readJsonStorage('all_snippets_data', []);
     updateBadges(allSnips);
 }
 
 function kartiKopruyeDonustur(id) {
-    const allSnips = JSON.parse(localStorage.getItem('all_snippets_data')) || [];
+    const allSnips = readJsonStorage('all_snippets_data', []);
     const snip = allSnips.find(s => s.id === id);
 
     if (!snip) return;
@@ -280,7 +290,7 @@ function kartiKopruyeDonustur(id) {
 }
 
 function hariciKartEkle(title, code, category) {
-    let allSnips = JSON.parse(localStorage.getItem('all_snippets_data')) || [];
+    let allSnips = readJsonStorage('all_snippets_data', []);
     const newId = 'snip-' + Date.now();
     allSnips.push({ id: newId, title, category, code, isFavorite: false });
     localStorage.setItem('all_snippets_data', JSON.stringify(allSnips));
@@ -288,7 +298,7 @@ function hariciKartEkle(title, code, category) {
 }
 
 window.toggleFavorite = function (id) {
-    let allSnips = JSON.parse(localStorage.getItem('all_snippets_data')) || [];
+    let allSnips = readJsonStorage('all_snippets_data', []);
     const snip = allSnips.find(s => s.id === id);
     if (snip) {
         snip.isFavorite = !snip.isFavorite;
@@ -300,7 +310,7 @@ window.toggleFavorite = function (id) {
 window.deleteSnip = function (id) {
     const confirmMsg = currentLang === 'tr' ? 'Bu kod kartını silmek istediğinize emin misiniz?' : 'Are you sure you want to delete this snippet?';
     if (confirm(confirmMsg)) {
-        let allSnips = JSON.parse(localStorage.getItem('all_snippets_data')) || [];
+        let allSnips = readJsonStorage('all_snippets_data', []);
         allSnips = allSnips.filter(snip => snip.id !== id);
         localStorage.setItem('all_snippets_data', JSON.stringify(allSnips));
         renderSnips();
@@ -308,7 +318,7 @@ window.deleteSnip = function (id) {
 };
 
 window.editCard = function (cardId) {
-    const allSnips = JSON.parse(localStorage.getItem('all_snippets_data')) || [];
+    const allSnips = readJsonStorage('all_snippets_data', []);
     const snip = allSnips.find(s => s.id === cardId);
 
     if (snip) {
@@ -333,7 +343,7 @@ window.saveSnipAction = function () {
 
     if (!title || !code) return;
 
-    let allSnips = JSON.parse(localStorage.getItem('all_snippets_data')) || [];
+    let allSnips = readJsonStorage('all_snippets_data', []);
 
     if (editId) {
         allSnips = allSnips.map(snip => snip.id === editId ? { ...snip, title, category, code } : snip);
@@ -470,7 +480,7 @@ function applySettings() {
 
 function loadSettings() {
     const defaultBackgroundImage = 'abstract_beta.png';
-    let saved = JSON.parse(localStorage.getItem('app_settings'));
+    let saved = readJsonStorage('app_settings', null);
 
     if (!saved) {
         saved = {
@@ -546,7 +556,7 @@ window.filterCategory = function (category, element) {
         if (category === 'all' || category === 'favorites') {
             pageTitle.innerText = titleMap[category][currentLang];
         } else {
-            const categories = JSON.parse(localStorage.getItem('codesnip_categories')) || [];
+            const categories = readJsonStorage('codesnip_categories', []);
             const cat = categories.find(c => c.id === category);
             if (cat) pageTitle.innerText = cat.name[currentLang] || cat.name.tr;
         }
@@ -575,7 +585,7 @@ function updateBadges(allSnips) {
     if (badgeAll) badgeAll.innerText = allSnips.length;
     if (badgeFav) badgeFav.innerText = allSnips.filter(s => s.isFavorite).length;
 
-    const categories = JSON.parse(localStorage.getItem('codesnip_categories')) || [];
+    const categories = readJsonStorage('codesnip_categories', []);
     categories.forEach(cat => {
         const count = allSnips.filter(s => s.category === cat.id).length;
         const bEl = document.getElementById(`badge-${cat.id}`);
@@ -852,7 +862,7 @@ function addCategoryProcess() {
 
     if (!nameTr) return;
 
-    let categories = JSON.parse(localStorage.getItem('codesnip_categories')) || [];
+    let categories = readJsonStorage('codesnip_categories', []);
 
     categories.push({
         id: nameTr.toLowerCase().replace(/\s+/g, '-'),
@@ -870,7 +880,7 @@ function deleteCategory(event, categoryId) {
 
     if (!confirm("Bu kategoriyi silmek istediğine emin misin?")) return;
 
-    let categories = JSON.parse(localStorage.getItem('codesnip_categories')) || [];
+    let categories = readJsonStorage('codesnip_categories', []);
     const updatedCategories = categories.filter(c => c.id !== categoryId);
 
     localStorage.setItem('codesnip_categories', JSON.stringify(updatedCategories));

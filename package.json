@@ -1,6 +1,6 @@
 {
   "name": "codesnip-app",
-  "version": "26Q3.5",
+  "version": "26Q3.6",
   "main": "main.js",
   "license": "MIT",
   "scripts": {
@@ -26,7 +26,10 @@
       "category": "public.app-category.developer-tools"
     },
     "linux": {
-      "target": ["AppImage", "deb"],
+      "target": [
+        "AppImage",
+        "deb"
+      ],
       "category": "Development"
     },
     "directories": {
